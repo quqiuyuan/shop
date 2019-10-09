@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aishang.dao.IOrderDao">
+
+    <!-- 添加订单-->
+    <insert id="addOrder" parameterType="Order">
+        <selectKey keyColumn="oid" keyProperty="oid" resultType="Integer" order="AFTER">
+            select last_insert_id()
+        </selectKey>
+        insert into orders values(default,#{total},#{orderTime},#{state},#{name},#{phone},#{addr},#{uid})
+    </insert>
+
+    <!-- 添加订单到订单表-->
+    <insert id="addOrderItem" parameterType="OrderItem">
+        insert into orderitem values(default,#{count},#{subTotal},#{pid},#{oid})
+    </insert>
+
+    <!-- 改变订单支付状态-->
+    <update id="changePayState" parameterType="Order">
+        update orders set state=#{state} where oid=#{oid}
+    </update>
+
+    <!-- 订单详情回显-->
+    <select id="getOrderDetail" parameterType="Integer" resultMap="orderMap">
+        select * from orders
+        inner join orderItem
+        on orders.oid=orderItem.oid
+        inner join product
+        on orderitem.pid=product.pid
+        where orders.oid=#{oid}
+    </select>
+
+    <!-- 我的订单-->
+    <select id="myOrders" parameterType="OrderForPageBean" resultMap="orderMap">
+        select * from (select * from orders where uid=#{uid} and state!=4 order by oid Desc limit #{start},#{pageSize}) o
+        inner join orderitem
+        on o.oid=orderitem.oid
+        inner join product
+        on orderitem.pid=product.pid
+    </select>
+
+    <!-- 我的订单页数-->
+    <select id="getRowCount" parameterType="OrderForPageBean" resultType="Integer">
+        select count(0) from orders where uid=#{uid} and state!=4
+    </select>
+
+    <!-- 删除order订单-->
+    <update id="delOrder" parameterType="Integer">
+        UPDATE orders set state=4 WHERE oid =#{oid}
+    </update>
+
+    <resultMap id="orderMap" type="OrderExt">
+        <id column="oid" property="oid"></id>
+        <result column="total" property="total"></result>
+        <result column="ordertime" property="orderTime"></result>
+        <result column="state" property="state"></result>
+        <result column="name" property="name"></result>
+        <result column="phone" property="phone"></result>
+        <result column="addr" property="addr"></result>
+        <result column="uid" property="uid"></result>
+        <collection property="orderItemExtList" ofType="OrderItemExt">
+            <id column="itemid" property="itemID"></id>
+            <result column="count" property="count"></result>
+            <result column="subtotal" property="subTotal"></result>
+            <result column="pid" property="pid"></result>
+            <result column="oid" property="oid"></result>
+            <association property="product" javaType="Product">
+                <id column="pid" property="pid"></id>
+                <result column="pname" property="pName"></result>
+                <result column="market_price" property="marketPrice"></result>
+                <result column="shop_price" property="shopPrice"></result>
+                <result column="image" property="image"></result>
+                <result column="pdesc" property="pDesc"></result>
+                <result column="is_hot" property="isHot"></result>
+                <result column="pdate" property="pDate"></result>
+                <result column="csid" property="csid"></result>
+            </association>
+        </collection>
+    </resultMap>
+</mapper>
